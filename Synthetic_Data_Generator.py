@@ -24,69 +24,64 @@ if uploaded_file is not None:
         # Preprocess the selected columns
         selected_data = data[columns]
 
-        # Identify categorical columns
-        categorical_columns = selected_data.select_dtypes(include=["object", "category"]).columns.tolist()
-        st.write("### Categorical Columns Identified:")
-        st.write(categorical_columns)
-
         # Let the user specify the number of synthetic data points
         st.write("### Specify the Number of Synthetic Data Points")
         num_points = st.slider(
             "Number of synthetic data points to generate",
             min_value=1,
-            max_value=10000,
-            value=len(data),
+            max_value=10000,  # Adjust max_value as needed
+            value=len(data),  # Default to the size of the original dataset
         )
 
         # Add a button to start training
         if st.button("Train CTGAN Model"):
+            # Train CTGAN model
             st.write("### Training CTGAN Model...")
-            progress_bar = st.progress(0)
-            ctgan = CTGAN(epochs=50)
+            progress_bar = st.progress(0)  # Initialize progress bar
+            status_text = st.empty()  # Placeholder for status updates
 
-            # Simulate progress bar during training
+            # Simulate progress during training
             for i in range(100):
-                time.sleep(0.05)
+                time.sleep(0.1)  # Simulate training time
                 progress_bar.progress(i + 1)
+                status_text.text(f"Training progress: {i + 1}%")
 
-            try:
-                # Train CTGAN
-                ctgan.fit(selected_data, discrete_columns=categorical_columns)
-                st.success("CTGAN Model trained successfully!")
+            ctgan = CTGAN(epochs=100)  # Adjust epochs as needed
+            ctgan.fit(selected_data, discrete_columns=selected_data.select_dtypes(include=['object', 'category']).columns)
 
-                # Generate synthetic data
-                st.write("### Generating Synthetic Data...")
-                synthetic_data_raw = ctgan.sample(num_points)
-                st.write(f"Raw Synthetic Data Shape: {synthetic_data_raw.shape}")
+            # Generate synthetic data
+            st.write("### Generating Synthetic Data...")
+            progress_bar.progress(0)  # Reset progress bar for data generation
+            status_text.text("Generating synthetic data...")
 
-                # Ensure proper column restoration
-                synthetic_data = pd.DataFrame(
-                    ctgan._transformer.inverse_transform(synthetic_data_raw),
-                    columns=selected_data.columns
-                )
+            synthetic_data = ctgan.sample(num_points)  # Generate the specified number of rows
 
-                st.write("### Synthetic Data")
-                st.write(synthetic_data.head())
+            # Simulate progress during data generation
+            for i in range(100):
+                time.sleep(0.03)  # Simulate data generation time
+                progress_bar.progress(i + 1)
+                status_text.text(f"Data generation progress: {i + 1}%")
 
-                # Visualize comparisons
-                st.write("### Comparison of Original vs Synthetic Data")
-                for column in columns:
-                    plt.figure(figsize=(10, 5))
-                    sns.histplot(selected_data[column], label='Original Data', kde=True, color='blue')
-                    sns.histplot(synthetic_data[column], label='Synthetic Data', kde=True, color='orange')
-                    plt.legend()
-                    plt.title(f'Comparison of {column} Distributions')
-                    st.pyplot(plt)
+            st.write("### Synthetic Data")
+            st.write(synthetic_data.head())
 
-                # Download synthetic data
-                st.write("### Download Synthetic Data")
-                synthetic_csv = synthetic_data.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download Synthetic Data as CSV",
-                    data=synthetic_csv,
-                    file_name='synthetic_data.csv',
-                    mime='text/csv',
-                )
+            # Visualize comparisons
+            st.write("### Comparison of Original vs Synthetic Data")
+            for column in columns:
+                plt.figure(figsize=(10, 5))
+                sns.histplot(selected_data[column], label='Original Data', kde=True, color='blue')
+                sns.histplot(synthetic_data[column], label='Synthetic Data', kde=True, color='orange')
+                plt.legend()
+                plt.title(f'Comparison of {column} Distributions')
+                st.pyplot(plt)
 
-            except ValueError as e:
-                st.error(f"An error occurred during data generation: {e}")
+            # Download synthetic data
+            st.write("### Download Synthetic Data")
+            synthetic_csv = synthetic_data.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Synthetic Data as CSV",
+                data=synthetic_csv,
+                file_name='synthetic_data.csv',
+                mime='text/csv',
+            )
+
