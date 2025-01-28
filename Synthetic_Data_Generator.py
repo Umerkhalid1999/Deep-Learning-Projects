@@ -85,4 +85,3 @@ if uploaded_file is not None:
                 mime='text/csv',
             )
 
-print(f"CTGAN version: { CTGAN.__version__}")
