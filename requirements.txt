@@ -1,1 +1,3 @@
 CTGAN == 0.10.2
+matplotlib == 1.3.0 
+seaborn == 0.13.2
